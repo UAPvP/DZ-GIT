@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdexcept>
 
 using namespace std;
 
@@ -37,6 +38,9 @@ public:
     other.buffer = nullptr;
     other.size = 0;
     cout << "Texture move constructor" << endl;
+  }
+  int getBufferSize() const {
+      return size;
   }
 
   Texture& operator=(const Texture& other)
@@ -104,8 +108,12 @@ public:
   {
     cout << "Material move constructor" << endl;
   }
+  int getBufferSize() const {
+      return texture.getBufferSize();
 
-  Material& operator=(const Material& other) noexcept
+  }
+
+  Material& operator=(const Material& other)
   {
     if (this == &other) { return *this; }
 
@@ -135,23 +143,25 @@ class MaterialContainer
     int count;
     int bufferSize;
 
+
 public:
-    MaterialContainer(int size) : bufferSize(size), count(0)
+    MaterialContainer() : count(0), bufferSize(0)
     {
-        arr = new Material * [bufferSize];
+        
+        arr = new Material * [count+1];
     }
 
     MaterialContainer(const MaterialContainer& other) : bufferSize(other.bufferSize), count(other.count)
     {
-        arr = new Material * [bufferSize];
+        arr = new Material * [count+1];
         for (int i = 0; i < count; i++) {
             arr[i] = new Material(*other.arr[i]);
         }
     }
 
     int size() const {return count;}
-    int capacity() const {return bufferSize;}
     bool empty() const {return count == 0;}
+    int getBufferSize() const {return bufferSize;}
 
     MaterialContainer& operator=(const MaterialContainer& other)
     {
@@ -162,7 +172,7 @@ public:
         delete[] arr;
         bufferSize = other.bufferSize;
         count = other.count;
-        arr = new Material * [bufferSize];
+        arr = new Material * [count+1];
         for (int i = 0; i < count; i++) {
             arr[i] = new Material(*other.arr[i]);
         }
@@ -171,11 +181,17 @@ public:
 
     Material& operator[](int index)
     {
+        if (index < 0 || index >= count) {
+            throw out_of_range("MaterialContainer index out of range");
+        }
         return *arr[index];
     }
 
     const Material& operator[](int index) const
     {
+        if (index < 0 || index >= count) {
+            throw out_of_range("MaterialContainer index out of range");
+        }
         return *arr[index];
     }
 
@@ -204,9 +220,17 @@ public:
 
     void addMaterial(const Material& material)
     {
-        if (count == bufferSize) return;
+        Material** newArr = new Material * [count + 1];
 
-        arr[count] = new Material(material);
+        for (int i = 0; i < count; i++) {
+            newArr[i] = arr[i];
+        }
+
+        newArr[count] = new Material(material);
+        bufferSize += material.getBufferSize();
+
+        delete[] arr;
+        arr = newArr;
         count++;
     }
 
@@ -214,6 +238,7 @@ public:
     {
         for (int i = 0; i < count; i++) {
             if (*arr[i] == material) {
+                bufferSize -= arr[i]->getBufferSize();
                 delete arr[i];
 
                 for (int j = i; j < count - 1; j++) {
@@ -244,7 +269,7 @@ int main()
     Material m3(16, "Metal");
 
     cout << "\n=== Create Container ===" << endl;
-    MaterialContainer container(5);
+    MaterialContainer container;
 
     cout << "\n=== Add Materials ===" << endl;
     container.addMaterial(m1);
