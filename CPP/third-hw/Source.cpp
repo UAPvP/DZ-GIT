@@ -234,8 +234,65 @@ public:
         delete[] ptr;
         ptr = new_ptr;
         length = new_length;
+    };
+
+    String operator+(const String& other) const {
+        String result(*this);
+        result.Append(other);
+        return result;
     }
+    String& operator+=(const String& other) {
+        this->Append(other);
+        return (*this);
+    }; // додавання до поточного 
+    String& operator=(const String& other) {
+        if (this == &other)
+            return *this;
+        delete[] ptr; 
+        length = other.length;
+        ptr = new char[length + 1];
+        for (int i = 0; i < length; i++) {
+            ptr[i] = other.ptr[i];
+        }
+        ptr[length] = '\0';
+        return *this;
+    } // Копіювання
+    bool operator==(const String& other) const {
+        if (length != other.length) return false;
+        for (int i = 0; i < length; i++) {
+            if (ptr[i] != other.ptr[i])
+                return false;
+        }
+        return true;
+    }; // Порівняння на рівність
+    bool operator!=(const String& other) const {
+        return !(*this == other);
+    }; // Порівняння на нерівність
+    bool operator<(const String& other) const {
+        return strcmp(ptr, other.ptr) < 0;
+    }// лексикографічно менше
+    bool operator>(const String& other) const {
+        return other<*this;
+    }; // лексикографічно більше
+    char& operator[](int index) {
+        return this->ptr[index];
+    }; // для читання та запису символу
+    const char& operator[](int index) const {
+        return this->ptr[index];
+    }; // для константного об'єкта
+    bool operator!() const {
+        return length == 0;
+    };
+    operator const char* () const {
+        return ptr;
+    }; // дозволяє використовувати String там, де потрібний const char*
 };
+ostream& operator<<(std::ostream& os, const String& s)
+{
+    os << s.GetData();
+    return os;
+}
+
 
 int main()
 {
