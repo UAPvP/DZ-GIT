@@ -72,7 +72,7 @@ public:
 
     // Move-конструктор
     // Повинен "перемістити" ресурси з іншого об'єкта
-    SmartArray(SmartArray&& other) : size(other.size), data(other.data), capacity(other.capacity) noexcept {
+    SmartArray(SmartArray&& other)  noexcept  : size(other.size), data(other.data), capacity(other.capacity)  {
         other.data = nullptr;
         other.size = 0;
         other.capacity = 0;
@@ -512,10 +512,83 @@ public:
     template <typename U>
     friend istream& operator>>(istream& in, SmartArray<U>& arr);
 
+    // =========================
+    // FUNCTOR
+    // =========================
+
+    template<typename Func>
+    void ForEach(Func func) {
+        for (size_t i = 0; i < size; ++i) {
+            func(data[i]);
+        }
+    };
+
+    bool swap_inside(T* x, T* y) {
+        T temp = *x;
+        *x = *y;
+        *y = temp;
+        return true;
+    };
     
+    template<typename Predicate>
+    void Sort(Predicate pred) {
+        for (size_t i = 0; i < size; i++) {
+            bool swapped = false;
+            for (size_t j = 0; j < size - i - 1; j++) {
+                if (pred(data[j], data[j + 1])) {
+                    swapped = swap_inside(&data[j], &data[j + 1]);
+                }
+            }
+            if (!swapped) {
+                break;
+            }
+        }
+    };
+    template<typename Predicate>
+    size_t CountIf(Predicate pred) const {
+        size_t count=0;
+        for (size_t i = 0;i < size;i++) {
+            if (pred(data[i])) count++;
+        }
+        return count;
+    };
+    template<typename Predicate>
+    T* FindIf(Predicate pred) {
+        for (size_t i = 0;i < size;i++) {
+            if (pred(data[i])) return &data[i];
+        }
+        return nullptr;
+    };
+    template<typename Predicate>
+    void RemoveIf(Predicate pred) {
+        for (size_t i = 0;i < size;) {
+            if (pred(data[i])) {
+                RemoveAt(i);
+            }
+            else {
+                i++;
+            }
+        }
+    };
 };
 
 
+
+
+template<typename T>
+void Execute(const T& item) {
+    cout << item << endl;
+}
+
+template<typename T>
+bool Compare(const T& item_1, const T& item_2) {
+    return (item_1 > item_2);
+};
+
+template<typename T>
+bool isEven(const T& item_1) {
+    return (int(item_1%2==0));
+};
 
 template <typename U>
 ostream& operator<<(ostream& out, const SmartArray<U>& arr) {
@@ -540,3 +613,61 @@ istream& operator>>(istream& in, SmartArray<U>& arr) {
 
 template <typename T>
 size_t SmartArray<T>::objectCount = 0;
+int main() {
+    SmartArray<int> arr;
+
+    // наполняем массив
+    arr.PushBack(5);
+    arr.PushBack(2);
+    arr.PushBack(9);
+    arr.PushBack(1);
+    arr.PushBack(7);
+
+    cout << "Original array: " << arr << endl;
+
+    // =========================
+    // ForEach
+    // =========================
+    cout << "\nForEach (print elements):\n";
+    arr.ForEach(Execute<int>);
+
+    // =========================
+    // Sort
+    // =========================
+    arr.Sort(Compare<int>);
+    cout << "\nAfter Sort (ascending): " << arr << endl;
+
+    // =========================
+    // CountIf
+    // =========================
+    size_t evenCount = arr.CountIf(isEven<int>);
+    cout << "\nEven numbers count: " << evenCount << endl;
+
+    // =========================
+    // FindIf
+    // =========================
+    int* found = arr.FindIf([](int x) {
+        return x > 5;
+        });
+
+    if (found) {
+        cout << "\nFirst element > 5: " << *found << endl;
+    }
+
+    // =========================
+    // RemoveIf
+    // =========================
+    arr.RemoveIf([](int x) {
+        return x % 2 == 0; // удалить все четные
+        });
+
+    cout << "\nAfter RemoveIf (even removed): " << arr << endl;
+
+    // =========================
+    // Static counter
+    // =========================
+    cout << "\nObject count: " << SmartArray<int>::GetObjectCount() << endl;
+
+    return 0;
+
+}
